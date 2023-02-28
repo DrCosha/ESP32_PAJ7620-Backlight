@@ -7,8 +7,6 @@ extern "C" {
 #include "freertos/timers.h"
 }
 #include <AsyncMqttClient.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
 void setup() {
   // put your setup code here, to run once:
