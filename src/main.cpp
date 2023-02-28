@@ -43,8 +43,10 @@ TimerHandle_t mqttReconnectTimer;                   // таймер повтор
 TimerHandle_t wifiReconnectTimer;                   // таймер повторной попытки установки WiFi соединения
 
 // назначаем GPIO контакты для устройств
-const int ledPin = 2;                               // выход GPIO для индикаторного светодиода
-const int buttonPin = 19;                           // вход GPIO для внешней кнопки
+const int ledInd = 2;                               // выход управления индикаторным светодиодом
+const int buttonPin = 19;                           // вход внешней кнопки
+const int ledCh1 = 5;                               // выход на канал управления LED1
+const int ledCh2 = 4;                               // выход на канал управления LED2
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
@@ -112,31 +114,35 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
   }
 }
 
-
-// TODO: --------------------------- дальше правим
-
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-  Serial.println("Subscribe acknowledged.");
-             //  "Подписка подтверждена."
-  Serial.print("  packetId: ");  //  "  ID пакета: "
-  Serial.println(packetId);
-  Serial.print("  qos: ");  //  "  Уровень качества обслуживания: "
-  Serial.println(qos);
+#ifdef DEBUG_IN_SERIAL   
+  Serial.println("Subscribe acknowledged.");                        // подписка подтверждена
+  Serial.print("  packetId: ");                                     // 
+  Serial.println(packetId);                                         // выводим ID пакета
+  Serial.print("  qos: ");                                          // 
+  Serial.println(qos);                                              // выводим значение QoS
+#endif                   
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-  Serial.println("Unsubscribe acknowledged.");
-            //  "Отписка подтверждена."
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+#ifdef DEBUG_IN_SERIAL     
+  Serial.println("Unsubscribe acknowledged.");                      // отписка подтверждена
+  Serial.print("  packetId: ");                                     //
+  Serial.println(packetId);                                         // выводим ID пакета
+#endif                     
 }
 
 void onMqttPublish(uint16_t packetId) {
-  Serial.println("Publish acknowledged.");
-            //  "Публикация подтверждена."
-  Serial.print("  packetId: ");
-  Serial.println(packetId);
+#ifdef DEBUG_IN_SERIAL     
+  Serial.println("Publish acknowledged.");                          // публикация подтверждена
+  Serial.print("  packetId: ");                                     //
+  Serial.println(packetId);                                         // выводим ID пакета
+#endif                     
 }
+
+
+// TODO: --------------------------- дальше правим
+
 
 // этой функцией управляется то, что происходит
 // при получении того или иного сообщения в топике «esp32/led»;
