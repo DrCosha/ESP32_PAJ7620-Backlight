@@ -18,6 +18,7 @@ extern "C" {
 }
 
 #include <AsyncMqttClient.h>
+#include <paj7620.h>
 
 // ----------- режим компиляции для отладки с выводом в порт -----------
 #define DEBUG_IN_SERIAL
