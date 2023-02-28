@@ -11,12 +11,17 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+
 extern "C" {
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 }
 
 #include <AsyncMqttClient.h>
+
+// ----------- режим компиляции для отладки с выводом в порт -----------
+#define DEBUG_IN_SERIAL
+// ---------------------------------------------------------------------
 
 #define WIFI_SSID "iot_ls"                          // SSID нашей локальной сети  
 #define WIFI_PASSWORD "vvssoft40"                   // пароль к нашей локальной сети
@@ -28,10 +33,8 @@ extern "C" {
 #define SET_TOPIC   "diy/blm32_kitchen/set"         // топик публикации команд для устройства
 #define STATE_TOPIC "diy/blm32_kitchen/state"       // топик публикации состояния устройства
 
-
-// режим компиляции для отладки с выводом в порт
-#define DEBUG_IN_SERIAL
-
+#define _SCL 22                                     // назначение выводов линии i2c
+#define _SDA 21                                     //
 
 // создаем объекты для управления MQTT-клиентом и WiFi соединением
 AsyncMqttClient mqttClient;                         // MQTT клиент
