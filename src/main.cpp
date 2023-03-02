@@ -258,4 +258,77 @@ void setup() {  // --- процедура начальной инициализ�
 
 void loop() {  // --- основной цикл исполняемого кода устройства
 
+  Gesture gesture;                  // Gesture is an enum type from RevEng_PAJ7620.h
+  gesture = gestureSensor.readGesture();   // Read back current gesture (if any) of type Gesture
+
+  switch (gesture)
+  {
+    case GES_FORWARD:
+      {
+        Serial.print("GES_FORWARD");
+        break;
+      }
+
+    case GES_BACKWARD:
+      {
+        Serial.print("GES_BACKWARD");
+        break;
+      }
+
+    case GES_LEFT:
+      {
+        Serial.print("GES_LEFT");
+        break;
+      }
+
+    case GES_RIGHT:
+      {
+        Serial.print("GES_RIGHT");
+        break;
+      }
+
+    case GES_UP:
+      {
+        Serial.print("GES_UP");
+        break;
+      }
+
+    case GES_DOWN:
+      {
+        Serial.print("GES_DOWN");
+        break;
+      }
+
+    case GES_CLOCKWISE:
+      {
+        Serial.print("GES_CLOCKWISE");
+        break;
+      }
+
+    case GES_ANTICLOCKWISE:
+      {
+        Serial.print("GES_ANTICLOCKWISE");
+        break;
+      }
+
+    case GES_WAVE:
+      {
+        Serial.print("GES_WAVE");
+        break;
+      }
+
+    case GES_NONE:
+      {
+        break;
+      }
+  }
+
+  if( gesture != GES_NONE )
+  {
+    Serial.print(", Code: ");
+    Serial.println(gesture);
+  }
+
+  delay(100);
+
 }
