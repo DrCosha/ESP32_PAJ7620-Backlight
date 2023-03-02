@@ -18,6 +18,7 @@ extern "C" {
 }
 
 #include <AsyncMqttClient.h>
+#include <GyverButton.h>
 #include <paj7620.h>
 
 // ----------- режим компиляции для отладки с выводом в порт -----------
@@ -29,6 +30,7 @@ extern "C" {
 #define MQTT_USER "mqtt_user"                       // имя пользователя для подключения к MQTT серверу
 #define MQTT_PWD "vvssoft40"                        // пароль для подключения к MQTT серверу
 #define MQTT_HOST IPAddress(192, 168, 10, 100)      // адрес нашего Mosquito MQTT сервера
+#define MQTT_PORT 1883                              // порт нашего Mosquito MQTT сервера
 
 #define LWT_TOPIC   "diy/blm32_kitchen/LWT"         // топик публикации доступности устройства
 #define SET_TOPIC   "diy/blm32_kitchen/set"         // топик публикации команд для устройства
@@ -50,155 +52,166 @@ const int ledCh2 = 4;                               // выход на кана�
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
-#ifdef DEBUG_IN_SERIAL                            
-  Serial.println("Try to connect Wi-Fi...");
-#endif
+  #ifdef DEBUG_IN_SERIAL                            
+    Serial.println("Try to connect Wi-Fi...");
+  #endif
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);             // запуск соединения с WiFi
 }
 
 void connectToMqtt() {
-#ifdef DEBUG_IN_SERIAL                            
-  Serial.println("Try to connect MQTT server...");
-#endif
+  #ifdef DEBUG_IN_SERIAL                            
+    Serial.println("Try to connect MQTT server...");
+  #endif
   mqttClient.connect();                             // запуск соединения с MQTT 
 }
 
 void WiFiEvent(WiFiEvent_t event) {
-#ifdef DEBUG_IN_SERIAL                              
-  Serial.printf("[WiFi-event] event: %d\n", event);
-#endif  
+  #ifdef DEBUG_IN_SERIAL                              
+    Serial.printf("[WiFi-event] event: %d\n", event);
+  #endif  
   switch(event) {                                   // обработка событий WiFi соединения             
     case SYSTEM_EVENT_STA_GOT_IP:                   // если получили IP:
-#ifdef DEBUG_IN_SERIAL                                  
-      Serial.println("WiFi connected");  
-      Serial.println("IP address: ");  
-      Serial.println(WiFi.localIP());
-#endif        
+
+      #ifdef DEBUG_IN_SERIAL                                  
+        Serial.println("WiFi connected");  
+        Serial.println("IP address: ");  
+        Serial.println(WiFi.localIP());
+      #endif        
+
       connectToMqtt();                              // соединяемся с MQTT
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:             // если произошел разрыв соединения
-#ifdef DEBUG_IN_SERIAL                                  
-      Serial.println("WiFi lost connection");
-#endif              
+
+      #ifdef DEBUG_IN_SERIAL                                  
+        Serial.println("WiFi lost connection");
+      #endif              
                                                     // делаем так, чтобы ESP32 не переподключалась к MQTT во время переподключения к WiFi:      
       xTimerStop(mqttReconnectTimer, 0);            // останавливаем таймер переподключения к MQTT
       xTimerStart(wifiReconnectTimer, 0);           // запускаем таймер переподключения к WiFi
       break;
+
+    default:                                        // обработка прочих кейсов
+      break;  
   }
+
 }
 
 // --- в этом фрагменте добавляем топики, на которые будет подписываться ESP32: SET_TOPIC
 void onMqttConnect(bool sessionPresent) { 
-#ifdef DEBUG_IN_SERIAL                                    
-  Serial.println("Connected to MQTT.");  //  "Подключились по MQTT."
-  Serial.print("Session present: ");  //  "Текущая сессия: "
-  Serial.println(sessionPresent);
-#endif                
+  #ifdef DEBUG_IN_SERIAL                                    
+    Serial.println("Connected to MQTT.");  //  "Подключились по MQTT."
+    Serial.print("Session present: ");  //  "Текущая сессия: "
+    Serial.println(sessionPresent);
+  #endif                
                                                                      // далее подписываем ESP32 на набор необходимых для управления топиков:
   uint16_t packetIdSub = mqttClient.subscribe(SET_TOPIC, 0);         // подписываем ESP32 на топик SET_TOPIC
 
-#ifdef DEBUG_IN_SERIAL                                      
-  Serial.print("Subscribing at QoS 0, packetId: ");
-  Serial.println(packetIdSub);
-  Serial.print("Topic: ");
-  Serial.println(SET_TOPIC);
-#endif                  
+  #ifdef DEBUG_IN_SERIAL                                      
+    Serial.print("Subscribing at QoS 0, packetId: ");
+    Serial.println(packetIdSub);
+    Serial.print("Topic: ");
+    Serial.println(SET_TOPIC);
+  #endif                  
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-#ifdef DEBUG_IN_SERIAL                                        
-  Serial.println("Disconnected from MQTT.");                        // если отключились от MQTT
-#endif                               
+  #ifdef DEBUG_IN_SERIAL                                        
+    Serial.println("Disconnected from MQTT.");                        // если отключились от MQTT
+  #endif                               
   if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);                             // запускаем таймер переподключения к MQTT
   }
 }
 
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
-#ifdef DEBUG_IN_SERIAL   
-  Serial.println("Subscribe acknowledged.");                        // подписка подтверждена
-  Serial.print("  packetId: ");                                     // 
-  Serial.println(packetId);                                         // выводим ID пакета
-  Serial.print("  qos: ");                                          // 
-  Serial.println(qos);                                              // выводим значение QoS
-#endif                   
+  #ifdef DEBUG_IN_SERIAL   
+    Serial.println("Subscribe acknowledged.");                        // подписка подтверждена
+    Serial.print("  packetId: ");                                     // 
+    Serial.println(packetId);                                         // выводим ID пакета
+    Serial.print("  qos: ");                                          // 
+    Serial.println(qos);                                              // выводим значение QoS
+  #endif                   
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
-#ifdef DEBUG_IN_SERIAL     
-  Serial.println("Unsubscribe acknowledged.");                      // отписка подтверждена
-  Serial.print("  packetId: ");                                     //
-  Serial.println(packetId);                                         // выводим ID пакета
-#endif                     
+  #ifdef DEBUG_IN_SERIAL     
+    Serial.println("Unsubscribe acknowledged.");                      // отписка подтверждена
+    Serial.print("  packetId: ");                                     //
+    Serial.println(packetId);                                         // выводим ID пакета
+  #endif                     
 }
 
 void onMqttPublish(uint16_t packetId) {
-#ifdef DEBUG_IN_SERIAL     
-  Serial.println("Publish acknowledged.");                          // публикация подтверждена
-  Serial.print("  packetId: ");                                     //
-  Serial.println(packetId);                                         // выводим ID пакета
-#endif                     
+  #ifdef DEBUG_IN_SERIAL     
+    Serial.println("Publish acknowledged.");                                              // публикация подтверждена
+    Serial.print("  packetId: ");                                                         //
+    Serial.println(packetId);                                                             // выводим ID пакета
+  #endif                     
 }
 
 
-// TODO: --------------------------- дальше правим
-
-
-// этой функцией управляется то, что происходит
-// при получении того или иного сообщения в топике «esp32/led»;
-// (если хотите, можете ее отредактировать):
+// в этой функции обрабатываем события получения данных в управляющем топике SET_TOPIC
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
   String messageTemp;
-  for (int i = 0; i < len; i++) {
-    //Serial.print((char)payload[i]);
+
+  #ifdef DEBUG_IN_SERIAL         
+    Serial.print("Get message: [");
+  #endif                         
+  for (int i = 0; i < len; i++) {                                                       // преобразуем полученные в сообщении данные в строку
+    #ifdef DEBUG_IN_SERIAL         
+      Serial.print((char)payload[i]);
+    #endif                         
     messageTemp += (char)payload[i];
   }
-/*  
-  // проверяем, получено ли MQTT-сообщение в топике «esp32/led»:
-  if (strcmp(topic, "esp32/led") == 0) {
-    // если светодиод выключен, включаем его (и наоборот):
-    if (ledState == LOW) {
-      ledState = HIGH;
-    } else {
-      ledState = LOW;
-    }
-    // задаем светодиоду значение из переменной «ledState»:
-    digitalWrite(ledPin, ledState);
+  #ifdef DEBUG_IN_SERIAL         
+    Serial.println("]");
+  #endif                         
+
+  // проверяем, в каком именно топике получено MQTT сообщение
+  if (strcmp(topic, SET_TOPIC) == 0) {
+    // проводим действия согласно полученным командам
+    // TODO:
+
+    
   }
- */
+ 
+  #ifdef DEBUG_IN_SERIAL         
+    Serial.println("Publish received.");                                                 //  выводим на консоль данные из топика
+    Serial.print("  topic: ");                                                           //  "  топик: "
+    Serial.println(topic);                                                               // название топика 
+    Serial.print("  message: ");                                                         //  "  сообщение: "
+    Serial.println(messageTemp);                                                         //  сообщение 
+  #endif                         
 
-  Serial.println("Publish received.");
-             //  "Опубликованные данные получены."
-  Serial.print("  message: ");  //  "  сообщение: "
-  Serial.println(messageTemp);
-  Serial.print("  topic: ");  //  "  топик: "
-  Serial.println(topic);
-  Serial.print("  qos: ");  //  "  уровень обслуживания: "
-  Serial.println(properties.qos);
-  Serial.print("  dup: ");  //  "  дублирование сообщения: "
-  Serial.println(properties.dup);
-  Serial.print("  retain: ");  //  "сохраненные сообщения: "
-  Serial.println(properties.retain);
-  Serial.print("  len: ");  //  "  размер: "
-  Serial.println(len);
-  Serial.print("  index: ");  //  "  индекс: "
-  Serial.println(index);
-  Serial.print("  total: ");  //  "  суммарно: "
-  Serial.println(total);
 }
-
-
 
 void setup() {  // --- процедура начальной инициализации устройства ---
-#ifdef DEBUG_IN_SERIAL                              // условная компиляция при выводе отладки в порт
-  // инициализация консольного порта 
-  Serial.begin(115200); 
-#endif
 
+  #ifdef DEBUG_IN_SERIAL                                                                 // условная компиляция при выводе отладки в порт
+    // инициализация консольного порта 
+    Serial.begin(115200); 
+  #endif
+
+  // настраиваем входы и выходы контроллера
+
+
+  // настраиваем MQTT клиента
+  WiFi.onEvent(WiFiEvent);
+  mqttClient.onConnect(onMqttConnect);
+  mqttClient.onDisconnect(onMqttDisconnect);
+  mqttClient.onSubscribe(onMqttSubscribe);
+  mqttClient.onUnsubscribe(onMqttUnsubscribe);
+  mqttClient.onMessage(onMqttMessage);
+  mqttClient.onPublish(onMqttPublish);
+  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+
+  // создаем таймеры, которые будут устанавливать и переустанавливать соединение с WiFi и MQ
+  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));  
 
 
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop() {  // --- основной цикл исполняемого кода устройства
+
 }

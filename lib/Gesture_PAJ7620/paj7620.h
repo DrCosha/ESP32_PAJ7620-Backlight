@@ -32,7 +32,7 @@
 #ifndef __PAJ7620_H__
 #define __PAJ7620_H__
 
-#define BIT(x)  1 << x
+#define _BIT(x)  1 << x
 
 // REGISTER DESCRIPTION
 #define PAJ7620_VAL(val, maskbit)		( val << maskbit )
@@ -98,16 +98,16 @@ typedef enum {
 /*
     enum {
 	// REGISTER 0
-	GES_RIGHT_FLAG			 = BIT(0),
-	GES_LEFT_FLAG			 = BIT(1),
-	GES_UP_FLAG				 = BIT(2),
-	GES_DOWN_FLAG			 = BIT(3),
-	GES_FORWARD_FLAG		 = BIT(4),
-	GES_BACKWARD_FLAG		 = BIT(5),
-	GES_CLOCKWISE_FLAG		 = BIT(6),
-	GES_COUNT_CLOCKWISE_FLAG = BIT(7),
+	GES_RIGHT_FLAG			 = _BIT(0),
+	GES_LEFT_FLAG			 = _BIT(1),
+	GES_UP_FLAG				 = _BIT(2),
+	GES_DOWN_FLAG			 = _BIT(3),
+	GES_FORWARD_FLAG		 = _BIT(4),
+	GES_BACKWARD_FLAG		 = _BIT(5),
+	GES_CLOCKWISE_FLAG		 = _BIT(6),
+	GES_COUNT_CLOCKWISE_FLAG = _BIT(7),
 	//REGISTER 1
-	GES_WAVE_FLAG		= BIT(0),
+	GES_WAVE_FLAG		= _BIT(0),
     };
 */
 
