@@ -76,8 +76,8 @@ const int PWM_Led2Channel = 1;                      // канал счетчик
 const int PWM_Resolution = 16;                      // разрешение управляющих каналов 
 
 // переменные управляющие PWM каналами 
-const uint32_t DutyCycleLED1 = 0;                   // заполнение цикла для LED1
-const uint32_t DutyCycleLED2 = 0;                   // заполнение цикла для LED2
+uint32_t DutyCycleLED1 = 0;                   // заполнение цикла для LED1
+uint32_t DutyCycleLED2 = 0;                   // заполнение цикла для LED2
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
@@ -267,6 +267,8 @@ void setup() {  // --- процедура начальной инициализ�
   ledcSetup(PWM_Led2Channel, PWM_Freq, PWM_Resolution);       // 
   ledcAttachPin(LED_PWR1, PWM_Led1Channel);                   // привязываем GPIO к каналам PWM 
   ledcAttachPin(LED_PWR2, PWM_Led2Channel);                   //
+  DutyCycleLED1 = 0;                                          // заполнение цикла для LED1
+  DutyCycleLED2 = 0;                                          // заполнение цикла для LED2
   ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // обнуляем заполнение PWM сигнала
   ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  //
 
@@ -312,12 +314,16 @@ void loop() {  // --- основной цикл исполняемого код�
     case GES_LEFT:
       {
         Serial.print("GES_LEFT");
+        DutyCycleLED1 = 10000;
+        DutyCycleLED2 = 10000;
         break;
       }
 
     case GES_RIGHT:
       {
         Serial.print("GES_RIGHT");
+        DutyCycleLED1 = 0;
+        DutyCycleLED2 = 0;
         break;
       }
 
@@ -361,6 +367,9 @@ void loop() {  // --- основной цикл исполняемого код�
   {
     Serial.print(", Code: ");
     Serial.println(gesture);
+
+    ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // обнуляем заполнение PWM сигнала
+    ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  //
 
 
     // если нет соединения с MQTT - ничего не генерим, ждем соединения
