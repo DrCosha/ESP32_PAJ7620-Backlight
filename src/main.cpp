@@ -69,12 +69,15 @@ RevEng_PAJ7620 gestureSensor = RevEng_PAJ7620();
 // создаем объект - JSON документ для приема/передачи данных через MQTT
 StaticJsonDocument<200> doc;                        // создаем json докумкент с буфером в 200 байт 
 
+// назначаем параметры ШИМ для каналов LED
+const int PWM_Freq = 5000;                          // базовая частота PWM
+const int PWM_Led1Channel = 0;                      // канал счетчика для LED1
+const int PWM_Led2Channel = 1;                      // канал счетчика для LED2
+const int PWM_Resolution = 16;                      // разрешение управляющих каналов 
 
-// объявляем глобальные переменные 
-bool MQTTConnected = false;                         // соединение MQTT установлено
-
-
-
+// переменные управляющие PWM каналами 
+const uint32_t DutyCycleLED1 = 0;                   // заполнение цикла для LED1
+const uint32_t DutyCycleLED2 = 0;                   // заполнение цикла для LED2
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
@@ -114,7 +117,6 @@ void WiFiEvent(WiFiEvent_t event) {
                                                     // делаем так, чтобы ESP32 не переподключалась к MQTT во время переподключения к WiFi:      
       xTimerStop(mqttReconnectTimer, 0);            // останавливаем таймер переподключения к MQTT
       xTimerStart(wifiReconnectTimer, 0);           // запускаем таймер переподключения к WiFi
-      MQTTConnected=false;
       break;
 
     default:                                        // обработка прочих кейсов
@@ -148,7 +150,6 @@ void onMqttConnect(bool sessionPresent) {
     Serial.println("]. QoS 0. "); 
   #endif                    
   
-  MQTTConnected=true;
 }
 
 
@@ -260,6 +261,14 @@ void setup() {  // --- процедура начальной инициализ�
 
   // настраиваем WiFi клиента
   WiFi.onEvent(WiFiEvent);
+
+  // настраиваем параметры ШИМ для каналов LED1 и LED2
+  ledcSetup(PWM_Led1Channel, PWM_Freq, PWM_Resolution);       // назначаем каналы для PWM, частоты и разрешение сигнала управления
+  ledcSetup(PWM_Led2Channel, PWM_Freq, PWM_Resolution);       // 
+  ledcAttachPin(LED_PWR1, PWM_Led1Channel);                   // привязываем GPIO к каналам PWM 
+  ledcAttachPin(LED_PWR2, PWM_Led2Channel);                   //
+  ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // обнуляем заполнение PWM сигнала
+  ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  //
 
   // настраиваем MQTT клиента
   mqttClient.setCredentials(MQTT_USER,MQTT_PWD);
