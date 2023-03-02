@@ -20,6 +20,7 @@ extern "C" {
 #include <AsyncMqttClient.h>
 #include <GyverButton.h>
 #include "RevEng_PAJ7620.h"
+#include <ArduinoJson.h>
 
 // ----------- режим компиляции для отладки с выводом в порт -----------
 #define DEBUG_IN_SERIAL
@@ -41,6 +42,10 @@ extern "C" {
 
 #define BUTTON_PIN 19                               // вывод назначенный для кнопки управления
 
+// определение JSON тегов для обмена 
+#define C_STATE "state"                             // тег состояния устройства  
+#define C_GESTURE "gesture"                         // тег последнего определенного жеста
+#define C_BRIGHTNESS "brightness"                   // тег текущей яркости для устройства
 
 // создаем объекты для управления MQTT-клиентом и WiFi соединением
 AsyncMqttClient mqttClient;                         // MQTT клиент
@@ -57,11 +62,20 @@ GButton ctrl_butt(BUTTON_PIN, HIGH_PULL, NORM_OPEN);  // инициализир�
 // создаем объект - сенсор движений
 RevEng_PAJ7620 gestureSensor = RevEng_PAJ7620();
 
+// создаем объект - JSON документ для приема/передачи данных через MQTT
+StaticJsonDocument<200> doc;                        // создаем json докумкент с буфером в 200 байт 
+
 // назначаем GPIO контакты для устройств
 const int ledInd = 2;                               // выход управления индикаторным светодиодом
 const int buttonPin = 19;                           // вход внешней кнопки
 const int ledCh1 = 5;                               // выход на канал управления LED1
 const int ledCh2 = 4;                               // выход на канал управления LED2
+
+// объявляем глобальные переменные 
+bool MQTTConnected = false;                         // соединение MQTT установлено
+
+
+
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
@@ -101,6 +115,7 @@ void WiFiEvent(WiFiEvent_t event) {
                                                     // делаем так, чтобы ESP32 не переподключалась к MQTT во время переподключения к WiFi:      
       xTimerStop(mqttReconnectTimer, 0);            // останавливаем таймер переподключения к MQTT
       xTimerStart(wifiReconnectTimer, 0);           // запускаем таймер переподключения к WiFi
+      MQTTConnected=false;
       break;
 
     default:                                        // обработка прочих кейсов
@@ -110,7 +125,7 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 // --- в этом фрагменте добавляем топики, на которые будет подписываться ESP32: SET_TOPIC
-void onMqttConnect(bool sessionPresent) { 
+void onMqttConnect(bool sessionPresent) {   
   #ifdef DEBUG_IN_SERIAL                                    
     Serial.println("Connected to MQTT.");  //  "Подключились по MQTT."
     Serial.print("Session present: ");  //  "Текущая сессия: "
@@ -125,7 +140,19 @@ void onMqttConnect(bool sessionPresent) {
     Serial.print("Topic: ");
     Serial.println(SET_TOPIC);
   #endif                  
+
+  mqttClient.publish(LWT_TOPIC, 0, true, "online");                 // публикуем в топик LWT_TOPIC событие о своей жизнеспособности
+
+  #ifdef DEBUG_IN_SERIAL                                      
+    Serial.print("Publishing LWT state in [");
+    Serial.print(LWT_TOPIC); 
+    Serial.println("]. QoS 0. "); 
+  #endif                    
+  
+  MQTTConnected=true;
 }
+
+
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
   #ifdef DEBUG_IN_SERIAL                                        
@@ -239,6 +266,7 @@ void setup() {  // --- процедура начальной инициализ�
   WiFi.onEvent(WiFiEvent);
 
   // настраиваем MQTT клиента
+  mqttClient.setCredentials(MQTT_USER,MQTT_PWD);
   mqttClient.onConnect(onMqttConnect);
   mqttClient.onDisconnect(onMqttDisconnect);
   mqttClient.onSubscribe(onMqttSubscribe);
@@ -327,7 +355,24 @@ void loop() {  // --- основной цикл исполняемого код�
   {
     Serial.print(", Code: ");
     Serial.println(gesture);
+
+
+    // если нет соединения с MQTT - ничего не генерим, ждем соединения
+    if (mqttClient.connected()) {                                       // если есть соединение с MQTT - выкладываем статус устройства 
+       Serial.println("Пишем в MQTT");
+       doc.clear();   
+       doc[C_STATE] = "ON";
+       doc[C_GESTURE] = gesture;
+       String payload;
+       serializeJson(doc, payload);
+       // публикуем в топик STATE_TOPIC серилизованный json через буфер buffer
+       char buffer[ payload.length()+1 ];
+       payload.toCharArray(buffer, sizeof(buffer));   
+       mqttClient.publish(STATE_TOPIC, 0, true, buffer );
+
+    }
   }
+
 
   delay(100);
 
