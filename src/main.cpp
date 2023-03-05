@@ -74,8 +74,10 @@ enum UserCommand {
 enum ButtonState {
   BTTN_NONE = 0,                                    // нет команды от кнопки
   BTTN_PRESS,                                       // кнопка нажата
+  BTTN_HOLD,	                                      // кнопка удерживается
   BTTN_RELEASE,	                                    // кнопка отпущена
-  BTTN_DBL_PRESS                                    // кнопка нажата дважды
+  BTTN_SINGLE,	                                    // однократное нажатие на кнопку
+  BTTN_DBL_PRESS                                    // двойное нажатие на кнопку
 };
 
 // создаем объекты для управления MQTT-клиентом и WiFi соединением
@@ -282,11 +284,14 @@ uint32_t CalcPWMCh2() {  // вычисляем текущую яркость, к
 
 void get_button_command() {  // --- процедура получения управляющих команд от кнопки ---
 
-/*  
-  if (butt1.isSingle()) { // если у нас одинарный клик - включение/выключение светильника                 
-    if (!PowerONState) cmdPowerON();                    // включаем свет
-      else cmdPowerOFF();                               // выключаем свет
+  if (ctrl_butt.isSingle()) {                            // если у нас одинарный клик - включение/выключение устройства
+    if (DeviceON) curr_Command = UCMD_OFF;               // включаем LED каналы
+      else curr_Command = UCMD_ON;                       // выключаем LED каналы
+    HasChanges = true;                                   // есть изменения
+    curr_Button_State = BTTN_SINGLE;                     // кнопка нажата однократно
   }
+
+/*  
   if (butt1.isDouble()){ // если у нас двойной клик - переключаем режим работы с яркостью/цветовой температурой
     if (!PowerONState) cmdPowerON();                    // если светильник выключен - включаем перед регулированием         
     ColorMode = not ColorMode;            
