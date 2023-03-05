@@ -282,6 +282,56 @@ uint32_t CalcPWMCh2() {  // вычисляем текущую яркость, к
 
 void get_button_command() {  // --- процедура получения управляющих команд от кнопки ---
 
+/*  
+  if (butt1.isSingle()) { // если у нас одинарный клик - включение/выключение светильника                 
+    if (!PowerONState) cmdPowerON();                    // включаем свет
+      else cmdPowerOFF();                               // выключаем свет
+  }
+  if (butt1.isDouble()){ // если у нас двойной клик - переключаем режим работы с яркостью/цветовой температурой
+    if (!PowerONState) cmdPowerON();                    // если светильник выключен - включаем перед регулированием         
+    ColorMode = not ColorMode;            
+    HasChanges = true;
+  } 
+  if (butt1.isRelease()) { // если кнопка отпускается - переключаем направление управления inc/dec
+    if (!PowerONState) return ;            
+    Direction = !Direction;                             // при отпускании кнопки проводим смену направления изменения ++ или -- 
+  }
+  if (butt1.isPress()) { // нажатие на кнопку - сброс последнего отсчета
+    LastStepInMills = millis();    
+  } 
+  if ( butt1.isHold() and PowerONState and NextStep() ){      // кнопка удерживается при этом светильник включен и наступило время для следующего шага - проводим изменение
+    if (ColorMode){ // если это режим изменения цвета  
+      if (Direction){ // определяем направление изменений - увеличение цветовой температуры (холоднее)
+        if ((color_temp+CT_DELTA) > MAX_CT) color_temp = MAX_CT;
+          else {
+            color_temp = color_temp+CT_DELTA;
+          }
+        } 
+      else { // уменьшение цветовой температуры (теплее)
+        if ((color_temp-CT_DELTA) < MIN_CT) color_temp = MIN_CT;
+          else {
+            color_temp = color_temp-CT_DELTA;
+          }          
+        }        
+      } 
+    else { // это режим изменения яркости
+      if (Direction){ // определяем направление изменений - увеличение цветовой температуры (холоднее)
+        if ((curr_brightness+BR_DELTA) > MAX_BR) curr_brightness = MAX_BR;
+          else {
+            curr_brightness = curr_brightness+BR_DELTA;           
+          }          
+        } 
+      else { // уменьшение цветовой температуры (теплее)
+        if ((curr_brightness-BR_DELTA) < MIN_BR) curr_brightness = MIN_BR;
+          else {
+            curr_brightness = curr_brightness-BR_DELTA;
+          }                    
+      }          
+    }  
+    HasChanges = true;                                // поднимаем флаг изменений    
+  }
+*/
+
   curr_Button_State = BTTN_NONE;
 
 }
