@@ -64,7 +64,9 @@ GButton ctrl_butt(BUTTON_PIN, HIGH_PULL, NORM_OPEN);  // инициализир�
 // NORM_CLOSE - нормально-замкнутая кнопка
 
 // создаем объект - сенсор движений
-RevEng_PAJ7620 gestureSensor = RevEng_PAJ7620();
+RevEng_PAJ7620 gestureSensor = RevEng_PAJ7620();    // создаем объект - сенсор
+Gesture gesture;                                    // данные полученные от PAJ7620 - код жеста
+
 
 // создаем объект - JSON документ для приема/передачи данных через MQTT
 StaticJsonDocument<200> doc;                        // создаем json докумкент с буфером в 200 байт 
@@ -225,6 +227,108 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
 }
 
+void get_button_command() {  // --- процедура получения управляющих команд от кнопки ---
+
+}
+
+void get_sensor_command() { // --- процедура получения управляющих команд от сенсора ---
+
+  gesture = gestureSensor.readGesture();    // Read back current gesture (if any) of type Gesture
+  switch (gesture)
+  {
+    case GES_LEFT:
+      {
+        Serial.print("GES_LEFT");
+        DutyCycleLED1 = 10000;
+        DutyCycleLED2 = 10000;
+        break;
+      }
+
+    case GES_RIGHT:
+      {
+        Serial.print("GES_RIGHT");
+        DutyCycleLED1 = 0;
+        DutyCycleLED2 = 0;
+        break;
+      }
+
+    case GES_CLOCKWISE:
+      {
+        Serial.print("GES_CLOCKWISE");
+        break;
+      }
+
+    case GES_ANTICLOCKWISE:
+      {
+        Serial.print("GES_ANTICLOCKWISE");
+        break;
+      }
+
+    case GES_NONE:
+      {
+        break;
+      }
+    default:
+      break;      
+      
+  }
+
+}
+
+void get_mqtt_command() { // --- процедура получения управляющих команд по каналу MQTT ---
+
+}
+
+void get_command() {  // --- процедура получения управляющих команд ---
+  get_button_command();                                       // процедура получения управляющих команд от кнопки
+  get_sensor_command();                                       // процедура получения управляющих команд от сенсора
+  get_mqtt_command();                                         // процедура получения управляющих команд по каналу MQTT
+}
+
+void applay_changes() { // --- применяем команды/изменения ---
+
+  ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // выставляем значения PWM сигнала для канала 1
+  ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  // ... для канала 2
+
+}
+
+void report_to_asyncPort() { // --- пишем события и состояние в асинхронный порт ---
+/*
+   if( gesture != GES_NONE )
+  {
+    Serial.print(", Code: ");
+    Serial.println(gesture);
+
+    ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // обнуляем заполнение PWM сигнала
+    ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  //
+
+
+*/
+}
+
+void report_to_topicMQTT() { // --- пишем события и состояние в MQTT топик ---
+  // если нет соединения с MQTT - ничего не генерим, ждем соединения
+  if (mqttClient.connected()) {                                       // если есть соединение с MQTT - выкладываем статус устройства 
+
+    doc.clear();   
+    doc[C_STATE] = "ON";
+    doc[C_GESTURE] = gesture;
+    String payload;
+    serializeJson(doc, payload);
+
+    // публикуем в топик STATE_TOPIC серилизованный json через буфер buffer
+    char buffer[ payload.length()+1 ];
+    payload.toCharArray(buffer, sizeof(buffer));   
+    mqttClient.publish(STATE_TOPIC, 0, true, buffer );
+
+  }
+}
+
+void report_state() { // --- сообщаем об изменении состояния в порт и топик MQTT ---
+  report_to_asyncPort();                                      // пишем события и состояние в асинхронный порт
+  report_to_topicMQTT();                                      // пишем события и состояние в MQTT топик
+}
+
 
 void setup() {  // --- процедура начальной инициализации устройства ---
   
@@ -289,106 +393,16 @@ void setup() {  // --- процедура начальной инициализ�
   // запускаем подключение к WiFi
   connectToWifi();
 
+  // начальная инициализация текущего распознанного жеста
+  gesture = GES_NONE;
+
 }
 
 void loop() {  // --- основной цикл исполняемого кода устройства
 
-  Gesture gesture;                  // Gesture is an enum type from RevEng_PAJ7620.h
-
-  gesture = gestureSensor.readGesture();   // Read back current gesture (if any) of type Gesture
-
-  switch (gesture)
-  {
-    case GES_FORWARD:
-      {
-        Serial.print("GES_FORWARD");
-        break;
-      }
-
-    case GES_BACKWARD:
-      {
-        Serial.print("GES_BACKWARD");
-        break;
-      }
-
-    case GES_LEFT:
-      {
-        Serial.print("GES_LEFT");
-        DutyCycleLED1 = 10000;
-        DutyCycleLED2 = 10000;
-        break;
-      }
-
-    case GES_RIGHT:
-      {
-        Serial.print("GES_RIGHT");
-        DutyCycleLED1 = 0;
-        DutyCycleLED2 = 0;
-        break;
-      }
-
-    case GES_UP:
-      {
-        Serial.print("GES_UP");
-        break;
-      }
-
-    case GES_DOWN:
-      {
-        Serial.print("GES_DOWN");
-        break;
-      }
-
-    case GES_CLOCKWISE:
-      {
-        Serial.print("GES_CLOCKWISE");
-        break;
-      }
-
-    case GES_ANTICLOCKWISE:
-      {
-        Serial.print("GES_ANTICLOCKWISE");
-        break;
-      }
-
-    case GES_WAVE:
-      {
-        Serial.print("GES_WAVE");
-        break;
-      }
-
-    case GES_NONE:
-      {
-        break;
-      }
-  }
-
-  if( gesture != GES_NONE )
-  {
-    Serial.print(", Code: ");
-    Serial.println(gesture);
-
-    ledcWrite(PWM_Led1Channel, DutyCycleLED1);                  // обнуляем заполнение PWM сигнала
-    ledcWrite(PWM_Led2Channel, DutyCycleLED2);                  //
-
-
-    // если нет соединения с MQTT - ничего не генерим, ждем соединения
-    if (mqttClient.connected()) {                                       // если есть соединение с MQTT - выкладываем статус устройства 
-
-       doc.clear();   
-       doc[C_STATE] = "ON";
-       doc[C_GESTURE] = gesture;
-       String payload;
-       serializeJson(doc, payload);
-       // публикуем в топик STATE_TOPIC серилизованный json через буфер buffer
-       char buffer[ payload.length()+1 ];
-       payload.toCharArray(buffer, sizeof(buffer));   
-       mqttClient.publish(STATE_TOPIC, 0, true, buffer );
-
-    }
-  }
-
-
-  delay(100);
-
+  
+  get_command();                // получаем текущую команду
+  applay_changes();             // применяем команды/изменения
+  report_state();               // сообщаем об изменении состояния в порт и топик MQTT
+ 
 }
