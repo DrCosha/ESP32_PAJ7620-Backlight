@@ -284,6 +284,8 @@ uint32_t CalcPWMCh2() {  // вычисляем текущую яркость, к
 
 void get_button_command() {  // --- процедура получения управляющих команд от кнопки ---
 
+  curr_Button_State = BTTN_NONE;                         // сбрасываем состояние кнопки
+
   if (ctrl_butt.isSingle()) {                            // если у нас одинарный клик - включение/выключение устройства
     if (DeviceON) curr_Command = UCMD_OFF;               // включаем LED каналы
       else curr_Command = UCMD_ON;                       // выключаем LED каналы
@@ -336,8 +338,6 @@ void get_button_command() {  // --- процедура получения упр
     HasChanges = true;                                // поднимаем флаг изменений    
   }
 */
-
-  curr_Button_State = BTTN_NONE;
 
 }
 
