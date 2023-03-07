@@ -87,10 +87,10 @@ TimerHandle_t wifiReconnectTimer;                   // таймер повтор
 
 // создаем обработчик кнопки
 GButton ctrl_butt(BUTTON_PIN, HIGH_PULL, NORM_OPEN);  // инициализируем кнопку управления
-// HIGH_PULL - кнопка подключена к GND, пин подтянут к VCC (PIN --- КНОПКА --- GND)
-// LOW_PULL  - кнопка подключена к VCC, пин подтянут к GND
-// NORM_OPEN - нормально-разомкнутая кнопка
-// NORM_CLOSE - нормально-замкнутая кнопка
+                                                      // HIGH_PULL - кнопка подключена к GND, пин подтянут к VCC (PIN --- КНОПКА --- GND)
+                                                      // LOW_PULL  - кнопка подключена к VCC, пин подтянут к GND
+                                                      // NORM_OPEN - нормально-разомкнутая кнопка
+                                                      // NORM_CLOSE - нормально-замкнутая кнопка
 
 // создаем объект - сенсор движений
 RevEng_PAJ7620 gestureSensor = RevEng_PAJ7620();    // создаем объект - сенсор
@@ -285,6 +285,7 @@ uint32_t CalcPWMCh2() {  // вычисляем текущую яркость, к
 void get_button_command() {  // --- процедура получения управляющих команд от кнопки ---
 
   curr_Button_State = BTTN_NONE;                         // сбрасываем состояние кнопки
+  ctrl_butt.tick();                                      // опрашиваем кнопку в цикле
 
   if (ctrl_butt.isSingle()) {                            // если у нас одинарный клик - включение/выключение устройства
     if (DeviceON) curr_Command = UCMD_OFF;               // включаем LED каналы
@@ -303,6 +304,7 @@ void get_button_command() {  // --- процедура получения упр
     if (!PowerONState) return ;            
     Direction = !Direction;                             // при отпускании кнопки проводим смену направления изменения ++ или -- 
   }
+
   if (butt1.isPress()) { // нажатие на кнопку - сброс последнего отсчета
     LastStepInMills = millis();    
   } 
