@@ -139,6 +139,7 @@ bool ColorMode = false;                             // режим регулир
 bool Direction = true;                              // направление изменения яркости/цвета
 unsigned long LastStepInMills = 0;                  // последний отсчет времени при регулировании яркости/цветовой температуры       
 bool InCycleChanges = false;                        // если мы в циклическом изменении регулирования яркости/цветовой температуры
+bool Has_MQTT_Command = false;                      // флаг получения MQTT команды 
 
 // набор обработчиков событий для MQTT клиента 
 void connectToWifi() {
@@ -269,18 +270,20 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
   // проверяем, в каком именно топике получено MQTT сообщение
   if (strcmp(topic, SET_TOPIC) == 0) {
-    // проводим действия согласно полученным командам
+    // разбираем MQTT сообщение и подготавливаем буфер с изменениями для формирования команд
 
     // TODO:
     
+
+    Has_MQTT_Command = true;                            // взводим флаг получения команды по MQTT
   }
  
   #ifdef DEBUG_IN_SERIAL         
-    Serial.println("Publish received.");                                                 //  выводим на консоль данные из топика
-    Serial.print("  topic: ");                                                           //  "  топик: "
-    Serial.println(topic);                                                               // название топика 
-    Serial.print("  message: ");                                                         //  "  сообщение: "
-    Serial.println(messageTemp);                                                         //  сообщение 
+    Serial.println("Publish received.");                //  выводим на консоль данные из топика
+    Serial.print("  topic: ");                          //  "  топик: "
+    Serial.println(topic);                              // название топика 
+    Serial.print("  message: ");                        //  "  сообщение: "
+    Serial.println(messageTemp);                        //  сообщение 
   #endif                         
 
 }
@@ -356,12 +359,14 @@ void get_button_command() {  // --- процедура получения упр
           else {
             curr_ColorTemp = curr_ColorTemp+CT_DELTA;
           }
+        curr_Command = UCMD_COLORTEMP_UP;               // взводим команду на изменение ЦТ
         } 
       else { // уменьшение цветовой температуры (теплее)
         if ((curr_ColorTemp-CT_DELTA) < MIN_COLOR_TEMP) curr_ColorTemp = MIN_COLOR_TEMP;
           else {
             curr_ColorTemp = curr_ColorTemp-CT_DELTA;
           }          
+        curr_Command = UCMD_COLORTEMP_DOWN;            // взводим команду на изменение ЦТ
         }        
       } 
     else { // это режим изменения яркости
@@ -370,16 +375,18 @@ void get_button_command() {  // --- процедура получения упр
           else {
             curr_Brightness = curr_Brightness+BR_DELTA;           
           }          
+        curr_Command = UCMD_BRGH_UP;                  // взводим команду на изменение яркости                                    
         } 
       else { // уменьшение цветовой температуры (теплее)
         if ((curr_Brightness-BR_DELTA) < MIN_LED_BRIGHTNESS) curr_Brightness = MIN_LED_BRIGHTNESS;
           else {
             curr_Brightness = curr_Brightness-BR_DELTA;
           }                    
+        curr_Command = UCMD_BRGH_DOWN;               // взводим команду на изменение яркости                                              
       }          
     }
-    InCycleChanges = true;                              // находимся в режиме циклического изменения   
-    HasChanges = true;                                  // поднимаем флаг изменений    
+    InCycleChanges = true;                           // находимся в режиме циклического изменения   
+    HasChanges = true;                               // поднимаем флаг изменений    
   }
 }
 
@@ -422,10 +429,12 @@ void get_sensor_command() { // --- процедура получения упр�
         if (ColorMode) { // если это режим изменения цвета - увеличиваем цветовую температуру (холоднее)  
             if ((curr_ColorTemp+CT_DELTA_BG) > MAX_COLOR_TEMP) curr_ColorTemp = MAX_COLOR_TEMP;
               else curr_ColorTemp = curr_ColorTemp+CT_DELTA_BG; 
+            curr_Command = UCMD_COLORTEMP_UP;           // взводим команду на изменение ЦТ  
           } 
         else { // это добавляем яркости
             if ((curr_Brightness+BR_DELTA_BG) > MAX_LED_BRIGHTNESS) curr_Brightness = MAX_LED_BRIGHTNESS;
             else curr_Brightness = curr_Brightness+BR_DELTA_BG;           
+            curr_Command = UCMD_BRGH_UP;                // взводим команду на изменение яркости              
           }
         break;
       }
@@ -435,19 +444,19 @@ void get_sensor_command() { // --- процедура получения упр�
         if (ColorMode) { // если это уменьшение цветовой температуры (теплее)
             if ((curr_ColorTemp-CT_DELTA_BG) < MIN_COLOR_TEMP) curr_ColorTemp = MIN_COLOR_TEMP;
               else curr_ColorTemp = curr_ColorTemp-CT_DELTA_BG;                    
+            curr_Command = UCMD_COLORTEMP_DOWN;         // взводим команду на изменение ЦТ                
           }        
         else { // это уменьшение  яркости
           if ((curr_Brightness-BR_DELTA_BG) < MIN_LED_BRIGHTNESS) curr_Brightness = MIN_LED_BRIGHTNESS;
             else curr_Brightness = curr_Brightness-BR_DELTA_BG;
+            curr_Command = UCMD_BRGH_DOWN;             // взводим команду на изменение яркости                          
           }                
-
         break;
       }
 
     case GES_NONE:
-      {
-        break;
-      }
+      break;
+
     default:
       break;      
       
@@ -456,7 +465,11 @@ void get_sensor_command() { // --- процедура получения упр�
 }
 
 void get_mqtt_command() { // --- процедура получения управляющих команд по каналу MQTT ---
+  if (!Has_MQTT_Command) return;                              // если флага о полученной команде от MQTT нет - выходим
+  
+  // TODO: обрабатываем полученную MQTT команду
 
+  Has_MQTT_Command = false;                                   // сбрасываем флаг об MQTT команде  
 }
 
 void get_command() {  // --- процедура получения управляющих команд ---
@@ -471,7 +484,7 @@ void applay_changes() { // --- применяем команды/изменен�
   if (!HasChanges) return;                                    // если нечего применять - выходим без обработки
   switch (curr_Command)
   {
-  case UCMD_ON:
+  case UCMD_ON:                 // включить LED каналы
     {  // обработка команды включения устройства     
       ledcWrite(PWM_Led1Channel, CalcPWMCh1());               // выставляем значения PWM сигнала для канала 1
       ledcWrite(PWM_Led2Channel, CalcPWMCh2());               // ... для канала 2     
@@ -479,11 +492,20 @@ void applay_changes() { // --- применяем команды/изменен�
       ColorMode = false;                                      // вкл режим регулирования яркости
       break;
     }
-  case UCMD_OFF:
+  case UCMD_OFF:                // выключить LED каналы
     {  // обработка команды включения устройства
       ledcWrite(PWM_Led1Channel, 0);                          // выставляем значения PWM сигнала для канала 1
       ledcWrite(PWM_Led2Channel, 0);                          // ... для канала 2     
       DeviceON = false;                                       // 
+      break;
+    }
+  case UCMD_BRGH_UP:            // повысить яркость  
+  case UCMD_BRGH_DOWN:          // понизить яркость
+  case UCMD_COLORTEMP_UP:       // изменить цветовую температуру - холоднее
+  case UCMD_COLORTEMP_DOWN:     // изменить цветовую температуру - теплее
+    {  // обработка команд изменения яркости/температуры
+      ledcWrite(PWM_Led1Channel, CalcPWMCh1());               // выставляем значения PWM сигнала для канала 1
+      ledcWrite(PWM_Led2Channel, CalcPWMCh2());               // ... для канала 2     
       break;
     }
   default:  // обработка команд по умолчанию
