@@ -500,6 +500,7 @@ void get_mqtt_command() { // --- процедура получения упра�
       HasChanges = true;      
     }
 
+    #ifndef ONLY_BRIGHTNESS_MODE
     // обработка тега COLOR_TEMP
     if (doc.containsKey(CN_COLOR_TEMP)) { // есть тег color_temp
       curr_ColorTemp = doc[CN_COLOR_TEMP];                    // присваиваем текущее значение цветовой температуры 
@@ -508,6 +509,7 @@ void get_mqtt_command() { // --- процедура получения упра�
       if (curr_ColorTemp > MAX_COLOR_TEMP) curr_ColorTemp = MAX_COLOR_TEMP;             // сверху
       HasChanges = true;
     }
+    #endif
 
   doc.clear();                                                // очищаем документ
   Has_MQTT_Command = false;                                   // сбрасываем флаг об MQTT команде  
