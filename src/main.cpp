@@ -417,8 +417,11 @@ void get_sensor_command() { // --- процедура получения упр�
   curr_Gesture = gestureSensor.readGesture();    // Read back current gesture (if any) of type Gesture
   switch (curr_Gesture)
   {
-    case GES_LEFT:
+    case GES_UP:
       {
+        #ifdef DEBUG_IN_SERIAL
+          Serial.println("Gesture: UP"); 
+        #endif
         if (!DeviceON) {  // если устройство выключено - включаем его
           HasChanges = true;
           curr_Command = UCMD_ON;
@@ -426,8 +429,11 @@ void get_sensor_command() { // --- процедура получения упр�
         break;
       }
 
-    case GES_RIGHT:
+    case GES_DOWN:
       {
+        #ifdef DEBUG_IN_SERIAL
+          Serial.println("Gesture: DOWN"); 
+        #endif
         if (DeviceON) {  // если устройство включено - выключаем его
           HasChanges = true;
           curr_Command = UCMD_OFF;
@@ -435,14 +441,17 @@ void get_sensor_command() { // --- процедура получения упр�
         break;
       }
 
-    case GES_DOWN:          // если жест - движение назад или вперед - это режим переключения регулирования яркость/цветовая температура
-    case GES_FORWARD:       // 
+    case GES_LEFT:          // если жест - движение назад или вперед - это режим переключения регулирования яркость/цветовая температура
+    case GES_RIGHT:         // !!! датчик повернут на 90' вправо !!!
       {         
         #ifdef ONLY_BRIGHTNESS_MODE  // если компилируем прошивку в режиме - только регулирование яркостью
           ColorMode = false;                                  // всегда только яркость  
         #else 
           ColorMode = !ColorMode;            
         #endif    
+        #ifdef DEBUG_IN_SERIAL
+          Serial.println("Gesture: LEFT or RIGHT"); 
+        #endif
         break;
       }
 
@@ -458,6 +467,9 @@ void get_sensor_command() { // --- процедура получения упр�
             else curr_Brightness = curr_Brightness+BR_DELTA_BG;           
             curr_Command = UCMD_BRGH_UP;                // взводим команду на изменение яркости              
           }
+        #ifdef DEBUG_IN_SERIAL
+          Serial.println("Gesture: CLOCKWISE"); 
+        #endif
         HasChanges = true;  
         break;
       }
@@ -474,14 +486,21 @@ void get_sensor_command() { // --- процедура получения упр�
             else curr_Brightness = curr_Brightness-BR_DELTA_BG;
             curr_Command = UCMD_BRGH_DOWN;             // взводим команду на изменение яркости                          
           }                
+        #ifdef DEBUG_IN_SERIAL
+          Serial.println("Gesture: ANTICLOCKWISE"); 
+        #endif
         HasChanges = true;            
         break;
       }
 
     case GES_NONE:
-      break;
+      break;      
 
     default:
+      #ifdef DEBUG_IN_SERIAL
+        Serial.print("Gesture code : "); 
+        Serial.println(curr_Gesture);
+      #endif
       break;      
       
   }
