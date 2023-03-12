@@ -61,6 +61,7 @@ extern "C" {
 #define CN_BUTTON "button"                          // тег последней команды от кнопки
 #define CN_BRIGHTNESS "brightness"                  // тег текущей яркости для устройства
 #define CN_COLOR_TEMP "color_temp"                  // тег значения текущей цветовой температуры
+#define CN_REPORT "report"                          // тег команды принудительной отправки состояния устройства
 
 // определяем минимальные и максимальные константы яркости и цветовой температуры
 #define MIN_LED_BRIGHTNESS 1                        // минимальная яркость
@@ -525,6 +526,11 @@ void get_mqtt_command() { // --- процедура получения упра�
       if (curr_Brightness < MIN_LED_BRIGHTNESS) curr_Brightness = MIN_LED_BRIGHTNESS;   // снизу
       if (curr_Brightness > MAX_LED_BRIGHTNESS) curr_Brightness = MAX_LED_BRIGHTNESS;   // сверху
       HasChanges = true;      
+    }
+
+    // обработка тега REPORT
+    if (doc.containsKey(CN_REPORT)) { // есть тег report
+      LastReportToMQTT = 0;                                   // сбрасываем задержку отправки состояния в MQTT    
     }
 
     #ifndef ONLY_BRIGHTNESS_MODE
