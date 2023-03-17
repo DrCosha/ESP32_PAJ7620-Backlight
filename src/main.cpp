@@ -25,24 +25,24 @@ extern "C" {
 // ------------------------------------------
 // ----------- режимы компиляции  -----------
 // ------------------------------------------
-//#define DEBUG_IN_SERIAL                             // компиляция в отладочном режиме с выводом в порт 
-#define ONLY_BRIGHTNESS_MODE                        // компилируем прошивку в режиме - только регулирование яркостью иначе - яркость+цветовая температура
-//#define EXTRA_MQTT_REPORT                           // компилируем прошивку в режиме передачи расширенных данных через MQTT
+#define DEBUG_IN_SERIAL                             // компиляция в отладочном режиме с выводом в порт 
+// #define ONLY_BRIGHTNESS_MODE                        // компилируем прошивку в режиме - только регулирование яркостью иначе - яркость+цветовая температура
+#define EXTRA_MQTT_REPORT                           // компилируем прошивку в режиме передачи расширенных данных через MQTT
 // ------------------------------------------
 // ------------------------------------------
 // ------------------------------------------
 
 
-#define WIFI_SSID "wifi_name"                       // SSID нашей локальной сети  
-#define WIFI_PASSWORD "wifi_pwd"                    // пароль к нашей локальной сети
+#define WIFI_SSID "iot_ls"                          // SSID нашей локальной сети  
+#define WIFI_PASSWORD "vvssoft40"                   // пароль к нашей локальной сети
 #define MQTT_USER "mqtt_user"                       // имя пользователя для подключения к MQTT серверу
-#define MQTT_PWD "mqtt_pwd"                         // пароль для подключения к MQTT серверу
-#define MQTT_HOST IPAddress(192, 168, 1, 100)       // адрес нашего Mosquito MQTT сервера
+#define MQTT_PWD "vvssoft40"                        // пароль для подключения к MQTT серверу
+#define MQTT_HOST IPAddress(192, 168, 10, 100)      // адрес нашего Mosquito MQTT сервера
 #define MQTT_PORT 1883                              // порт нашего Mosquito MQTT сервера
 
-#define LWT_TOPIC   "diy/blm32_kitchen/LWT"         // топик публикации доступности устройства
-#define SET_TOPIC   "diy/blm32_kitchen/set"         // топик публикации команд для устройства
-#define STATE_TOPIC "diy/blm32_kitchen/state"       // топик публикации состояния устройства
+#define LWT_TOPIC   "diy/blm32_brm/LWT"             // топик публикации доступности устройства
+#define SET_TOPIC   "diy/blm32_brm/set"             // топик публикации команд для устройства
+#define STATE_TOPIC "diy/blm32_brm/state"           // топик публикации состояния устройства
 
 // назначаем GPIO контакты для устройств
 #define _SCL 22                                     // назначение выводов линии i2c
