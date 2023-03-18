@@ -26,7 +26,7 @@ extern "C" {
 // ----------- режимы компиляции  -----------
 // ------------------------------------------
 #define DEBUG_IN_SERIAL                             // компиляция в отладочном режиме с выводом в порт 
-// #define ONLY_BRIGHTNESS_MODE                        // компилируем прошивку в режиме - только регулирование яркостью иначе - яркость+цветовая температура
+#define ONLY_BRIGHTNESS_MODE                        // компилируем прошивку в режиме - только регулирование яркостью иначе - яркость+цветовая температура
 #define EXTRA_MQTT_REPORT                           // компилируем прошивку в режиме передачи расширенных данных через MQTT
 // ------------------------------------------
 // ------------------------------------------
@@ -165,6 +165,7 @@ void connectToWifi() {
   #ifdef DEBUG_IN_SERIAL                            
     Serial.println("Try to connect Wi-Fi...");
   #endif
+  xTimerStart(wifiReconnectTimer, 0);               // запускаем таймер переподключения к WiFi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);             // запуск соединения с WiFi
 }
 
@@ -181,6 +182,8 @@ void WiFiEvent(WiFiEvent_t event) {
   #endif  
   switch(event) {                                   // обработка событий WiFi соединения             
     case SYSTEM_EVENT_STA_GOT_IP:                   // если получили IP:
+
+      xTimerStop(wifiReconnectTimer, 0);           // останавливаем таймер переподключения к WiFi
 
       #ifdef DEBUG_IN_SERIAL                                  
         Serial.println("WiFi connected");  
@@ -209,6 +212,9 @@ void WiFiEvent(WiFiEvent_t event) {
 
 // --- в этом фрагменте добавляем топики, на которые будет подписываться ESP32: SET_TOPIC
 void onMqttConnect(bool sessionPresent) {   
+
+  xTimerStop(mqttReconnectTimer, 0);                             // останавливаем таймер переподключения к MQTT
+
   #ifdef DEBUG_IN_SERIAL                                    
     Serial.println("Connected to MQTT.");  //  "Подключились по MQTT."
     Serial.print("Session present: ");  //  "Текущая сессия: "
@@ -706,8 +712,8 @@ void setup() {  // --- процедура начальной инициализ�
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
 
   // создаем таймеры, которые будут устанавливать и переустанавливать соединение с WiFi и MQ
-  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
-  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));  
+  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(8000), pdTRUE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(5000), pdTRUE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));  
 
   // запускаем подключение к WiFi
   connectToWifi();
